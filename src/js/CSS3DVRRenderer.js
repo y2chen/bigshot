@@ -65,7 +65,10 @@ bigshot.CSS3DVRRenderer.prototype = {
     browser : new bigshot.Browser (),
     
     dispose : function () {
-        
+        this.container.removeChild (this.canvasOrigin);
+        delete this.canvasOrigin;
+        delete this.mvMatrix;
+        delete this.pMatrix;        
     },
     
     createTileCache : function (onloaded, onCacheInit, parameters) {
