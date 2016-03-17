@@ -48,7 +48,18 @@ bigshot.FullScreen = function (container) {
     
     this.requestFullScreen = findFunc (container, ["requestFullScreen", "mozRequestFullScreen", "webkitRequestFullScreen", "msRequestFullscreen"]);
     this.cancelFullScreen = findFunc (document, ["cancelFullScreen", "mozCancelFullScreen", "webkitCancelFullScreen", "msExitFullscreen"]);
-    
+    this.errorEvent = 'fullscreenerror';
+    this.changeEvent = 'fullscreenchange';
+    var prefix = this.requestFullScreen.substring(0,this.requestFullScreen.indexOf('Request'));
+    if(prefix !== '') {
+        this.errorEvent = prefix + this.errorEvent;
+        this.changeEvent = prefix + this.changeEvent;
+        if(prefix === 'ms') {
+            this.errorEvent = 'MSFullscreenError';
+            this.changeEvent = 'MSFullscreenChange';
+        }
+    }
+        
     this.restoreSize = this.requestFullScreen != null;
 }
 
@@ -129,68 +140,32 @@ bigshot.FullScreen.prototype = {
         
         var that = this;
         
-        if (this.requestFullScreen == "mozRequestFullScreen") {
-            /**
-             * @private
-             */
-            var errFun = function () {
-                that.container.removeEventListener ("mozfullscreenerror", errFun);
-                that.isFullScreen = false;
-                that.exitFullScreenHandler ();
-                that.onClose ();
-            };
-            this.container.addEventListener ("mozfullscreenerror", errFun);
-            
-            /**
-             * @private
-             */
-            var changeFun = function () {
-                if (document.mozFullScreenElement !== that.container) {
-                    document.removeEventListener ("mozfullscreenchange", changeFun);
-                    that.exitFullScreenHandler ();
-                } else {
-                    that.onResize ();
-                }
-            };
-            document.addEventListener ("mozfullscreenchange", changeFun);
-        } else if (this.requestFullScreen == 'msRequestFullscreen') {
-            /**
-             * @private
-             */
-            var errFun = function () {
-                that.container.removeEventListener ("MSFullscreenError", errFun);
-                that.isFullScreen = false;
-                that.exitFullScreenHandler ();
-                that.onClose ();
-            };
-            this.container.addEventListener ("MSFullscreenError", errFun);
+        /**
+         * @private
+         */
+        var errFun = function () {
+            that.container.removeEventListener (that.errorEvent, errFun);
+            that.isFullScreen = false;
+            that.exitFullScreenHandler ();
+            that.onClose ();
+        };
+        this.container.addEventListener (this.errorEvent, errFun);
 
-            /**
-             * @private
-             */
-            var changeFun = function () {
-                if (document.msFullscreenElement !== that.container) {
-                    document.removeEventListener ("MSFullscreenChange", changeFun);
-                    that.exitFullScreenHandler ();
-                } else {
-                    that.onResize ();
-                }
-            };
-            document.addEventListener ("MSFullscreenChange", changeFun);
-        } else {
-            /**
-             * @private
-             */
-            var changeFun = function () {
-                if (document.webkitCurrentFullScreenElement !== that.container) {
-                    that.container.removeEventListener ("webkitfullscreenchange", changeFun);
-                    that.exitFullScreenHandler ();
-                } else {
-                    that.onResize ();
-                }
-            };
-            this.container.addEventListener ("webkitfullscreenchange", changeFun);
-        }
+        /**
+         * @private
+         */
+        var changeFun = function () {
+            that.fullscreenElement = document.fullscreenElement || document.mozFullScreenElement || document.webkitCurrentFullScreenElement || document.msFullscreenElement;
+            if (that.fullscreenElement !== that.container) {
+                document.removeEventListener (that.changeEvent, changeFun);
+                that.container.removeEventListener (that.changeEvent, changeFun);
+                that.exitFullScreenHandler ();
+            } else {
+                that.onResize ();
+            }
+        };
+        document.addEventListener (this.changeEvent, changeFun);
+        this.container.addEventListener (this.changeEvent, changeFun);
         
         this.exitFullScreenHandler = function () {
             if (that.isFullScreen) {
