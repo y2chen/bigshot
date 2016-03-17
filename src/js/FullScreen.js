@@ -158,6 +158,7 @@ bigshot.FullScreen.prototype = {
             that.fullscreenElement = document.fullscreenElement || document.mozFullScreenElement || document.webkitCurrentFullScreenElement || document.msFullscreenElement;
             if (that.fullscreenElement !== that.container) {
                 document.removeEventListener (that.changeEvent, changeFun);
+                // webkit requires listener on the container itself, not on document
                 that.container.removeEventListener (that.changeEvent, changeFun);
                 that.exitFullScreenHandler ();
             } else {
@@ -165,6 +166,7 @@ bigshot.FullScreen.prototype = {
             }
         };
         document.addEventListener (this.changeEvent, changeFun);
+        // webkit requires listener on the container itself, not on document
         this.container.addEventListener (this.changeEvent, changeFun);
         
         this.exitFullScreenHandler = function () {
